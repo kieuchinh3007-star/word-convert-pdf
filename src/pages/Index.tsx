@@ -19,7 +19,7 @@ const Index = () => {
         
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6" style={{ color: '#f39849' }}>
               Word to PDF Converter Online - Free & Fast
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground mb-4">
