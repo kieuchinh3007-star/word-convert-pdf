@@ -24,10 +24,10 @@ export const HowToUse = () => {
     <section className="py-16 px-4 bg-gradient-to-b from-secondary/30 to-background">
       <div className="container mx-auto max-w-6xl">
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
-          How to Use Our Free PDF Converter
+          How to Use Our Word to PDF Converter
         </h2>
         <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-          Transform any document to PDF in three simple steps with our free online converter
+          Convert your Word documents to PDF in just 3 simple steps
         </p>
         
         <div className="grid md:grid-cols-3 gap-8">
