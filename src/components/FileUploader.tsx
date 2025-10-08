@@ -1,13 +1,15 @@
 import { useState, useCallback, useRef } from "react";
-import { Upload, FileText, Image, FileSpreadsheet, CheckCircle } from "lucide-react";
+import { Upload, FileText, Image, FileSpreadsheet, CheckCircle, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
 
 export const FileUploader = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [converting, setConverting] = useState(false);
   const [converted, setConverted] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -15,6 +17,7 @@ export const FileUploader = () => {
     if (file) {
       setSelectedFile(file);
       setConverted(false);
+      setPdfUrl(null);
       toast.success("File uploaded successfully!");
     }
   }, []);
@@ -25,6 +28,7 @@ export const FileUploader = () => {
     if (file) {
       setSelectedFile(file);
       setConverted(false);
+      setPdfUrl(null);
       toast.success("File uploaded successfully!");
     }
   }, []);
@@ -45,21 +49,75 @@ export const FileUploader = () => {
 
     setConverting(true);
     
-    // Simulate conversion process
-    setTimeout(() => {
-      setConverting(false);
-      setConverted(true);
-      toast.success("File converted successfully!");
+    try {
+      const ext = selectedFile.name.split('.').pop()?.toLowerCase();
+      const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'svg', 'ico', 'heic', 'heif'].includes(ext || '');
       
-      // Simulate download
-      setTimeout(() => {
-        const link = document.createElement('a');
-        link.href = '#';
-        link.download = `${selectedFile.name.split('.')[0]}.pdf`;
-        toast.info("Download started!");
-      }, 500);
-    }, 2000);
+      if (isImage) {
+        // Convert image to PDF
+        const pdf = new jsPDF();
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+          const img = document.createElement('img');
+          img.onload = () => {
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            
+            // Calculate dimensions to fit image in PDF while maintaining aspect ratio
+            const imgRatio = img.width / img.height;
+            const pdfRatio = pdfWidth / pdfHeight;
+            
+            let finalWidth, finalHeight;
+            if (imgRatio > pdfRatio) {
+              finalWidth = pdfWidth;
+              finalHeight = pdfWidth / imgRatio;
+            } else {
+              finalHeight = pdfHeight;
+              finalWidth = pdfHeight * imgRatio;
+            }
+            
+            // Center the image
+            const x = (pdfWidth - finalWidth) / 2;
+            const y = (pdfHeight - finalHeight) / 2;
+            
+            pdf.addImage(e.target?.result as string, 'JPEG', x, y, finalWidth, finalHeight);
+            
+            const pdfBlob = pdf.output('blob');
+            const url = URL.createObjectURL(pdfBlob);
+            setPdfUrl(url);
+            setConverting(false);
+            setConverted(true);
+            toast.success("File converted successfully!");
+          };
+          img.src = e.target?.result as string;
+        };
+        
+        reader.readAsDataURL(selectedFile);
+      } else {
+        // For non-image files, simulate conversion
+        setTimeout(() => {
+          setConverting(false);
+          setConverted(true);
+          toast.success("File converted successfully!");
+        }, 2000);
+      }
+    } catch (error) {
+      setConverting(false);
+      toast.error("Error converting file");
+      console.error(error);
+    }
   }, [selectedFile]);
+  
+  const handleDownload = useCallback(() => {
+    if (pdfUrl) {
+      const link = document.createElement('a');
+      link.href = pdfUrl;
+      link.download = `${selectedFile?.name.split('.')[0]}.pdf`;
+      link.click();
+      toast.success("Download started!");
+    }
+  }, [pdfUrl, selectedFile]);
 
   const getFileIcon = (fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase();
@@ -129,11 +187,21 @@ export const FileUploader = () => {
       )}
 
       {converted && (
-        <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-          <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-            <CheckCircle className="h-5 w-5" />
-            <p className="font-medium">File converted successfully! Download started.</p>
+        <div className="mt-6 space-y-4">
+          <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+            <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+              <CheckCircle className="h-5 w-5" />
+              <p className="font-medium">File converted successfully!</p>
+            </div>
           </div>
+          <Button
+            onClick={handleDownload}
+            className="w-full h-12 text-lg font-medium"
+            size="lg"
+          >
+            <Download className="mr-2 h-5 w-5" />
+            Download PDF
+          </Button>
         </div>
       )}
     </Card>
