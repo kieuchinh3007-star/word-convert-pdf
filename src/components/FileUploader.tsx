@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Upload, FileText, Image, FileSpreadsheet, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,6 +8,7 @@ export const FileUploader = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [converting, setConverting] = useState(false);
   const [converted, setConverted] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -30,6 +31,10 @@ export const FileUploader = () => {
 
   const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
+  }, []);
+
+  const handleBoxClick = useCallback(() => {
+    fileInputRef.current?.click();
   }, []);
 
   const handleConvert = useCallback(async () => {
@@ -58,7 +63,7 @@ export const FileUploader = () => {
 
   const getFileIcon = (fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase();
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) return <Image className="h-8 w-8" />;
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'svg', 'ico', 'heic', 'heif'].includes(ext || '')) return <Image className="h-8 w-8" />;
     if (['xlsx', 'xls', 'csv'].includes(ext || '')) return <FileSpreadsheet className="h-8 w-8" />;
     return <FileText className="h-8 w-8" />;
   };
@@ -68,22 +73,24 @@ export const FileUploader = () => {
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
+        onClick={handleBoxClick}
         className="border-2 border-dashed border-primary/30 rounded-xl p-12 text-center hover:border-primary/60 transition-all cursor-pointer bg-gradient-to-b from-primary/5 to-transparent"
       >
         <input
+          ref={fileInputRef}
           type="file"
           id="file-upload"
           className="hidden"
           onChange={handleFileChange}
-          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,.odt,.ods,.odp,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.tif,.svg,.ico,.heic,.heif"
         />
-        <label htmlFor="file-upload" className="cursor-pointer">
+        <div className="pointer-events-none">
           {!selectedFile ? (
             <>
               <Upload className="h-16 w-16 mx-auto mb-4 text-primary" />
               <h3 className="text-xl font-semibold mb-2">Drop your file here or click to browse</h3>
               <p className="text-muted-foreground">
-                Support: Word, Excel, PowerPoint, Images (JPG, PNG), and more
+                Support: Word, Excel, PowerPoint, Images (JPG, PNG, BMP, TIFF, SVG), PDF, TXT, and more
               </p>
             </>
           ) : (
@@ -101,7 +108,7 @@ export const FileUploader = () => {
               </p>
             </div>
           )}
-        </label>
+        </div>
       </div>
 
       {selectedFile && !converted && (
