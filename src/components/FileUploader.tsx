@@ -1,9 +1,10 @@
 import { useState, useCallback, useRef } from "react";
-import { Upload, FileText, Image, FileSpreadsheet, CheckCircle, Download } from "lucide-react";
+import { Upload, FileText, CheckCircle, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import jsPDF from "jspdf";
+import mammoth from "mammoth";
+import html2pdf from "html2pdf.js";
 
 export const FileUploader = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -51,56 +52,44 @@ export const FileUploader = () => {
     
     try {
       const ext = selectedFile.name.split('.').pop()?.toLowerCase();
-      const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'svg', 'ico', 'heic', 'heif'].includes(ext || '');
       
-      if (isImage) {
-        // Convert image to PDF
-        const pdf = new jsPDF();
-        const reader = new FileReader();
+      if (ext === 'docx' || ext === 'doc') {
+        // Convert Word to PDF
+        const arrayBuffer = await selectedFile.arrayBuffer();
         
-        reader.onload = (e) => {
-          const img = document.createElement('img');
-          img.onload = () => {
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            
-            // Calculate dimensions to fit image in PDF while maintaining aspect ratio
-            const imgRatio = img.width / img.height;
-            const pdfRatio = pdfWidth / pdfHeight;
-            
-            let finalWidth, finalHeight;
-            if (imgRatio > pdfRatio) {
-              finalWidth = pdfWidth;
-              finalHeight = pdfWidth / imgRatio;
-            } else {
-              finalHeight = pdfHeight;
-              finalWidth = pdfHeight * imgRatio;
-            }
-            
-            // Center the image
-            const x = (pdfWidth - finalWidth) / 2;
-            const y = (pdfHeight - finalHeight) / 2;
-            
-            pdf.addImage(e.target?.result as string, 'JPEG', x, y, finalWidth, finalHeight);
-            
-            const pdfBlob = pdf.output('blob');
-            const url = URL.createObjectURL(pdfBlob);
-            setPdfUrl(url);
-            setConverting(false);
-            setConverted(true);
-            toast.success("File converted successfully!");
-          };
-          img.src = e.target?.result as string;
+        // Use mammoth to convert docx to HTML
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+        const htmlContent = result.value;
+        
+        // Create a temporary container with proper styling
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        tempDiv.style.padding = '40px';
+        tempDiv.style.backgroundColor = 'white';
+        tempDiv.style.fontFamily = 'Arial, sans-serif';
+        tempDiv.style.fontSize = '12pt';
+        tempDiv.style.lineHeight = '1.6';
+        tempDiv.style.color = 'black';
+        
+        // Configure html2pdf options
+        const opt = {
+          margin: 10,
+          filename: `${selectedFile.name.split('.')[0]}.pdf`,
+          image: { type: 'jpeg' as const, quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
         };
         
-        reader.readAsDataURL(selectedFile);
+        // Generate PDF
+        const pdfBlob = await html2pdf().set(opt).from(tempDiv).output('blob');
+        const url = URL.createObjectURL(pdfBlob);
+        setPdfUrl(url);
+        setConverting(false);
+        setConverted(true);
+        toast.success("File converted successfully!");
       } else {
-        // For non-image files, simulate conversion
-        setTimeout(() => {
-          setConverting(false);
-          setConverted(true);
-          toast.success("File converted successfully!");
-        }, 2000);
+        toast.error("Please select a Word document (.doc or .docx)");
+        setConverting(false);
       }
     } catch (error) {
       setConverting(false);
@@ -119,10 +108,7 @@ export const FileUploader = () => {
     }
   }, [pdfUrl, selectedFile]);
 
-  const getFileIcon = (fileName: string) => {
-    const ext = fileName.split('.').pop()?.toLowerCase();
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'tif', 'svg', 'ico', 'heic', 'heif'].includes(ext || '')) return <Image className="h-8 w-8" />;
-    if (['xlsx', 'xls', 'csv'].includes(ext || '')) return <FileSpreadsheet className="h-8 w-8" />;
+  const getFileIcon = () => {
     return <FileText className="h-8 w-8" />;
   };
 
@@ -140,15 +126,15 @@ export const FileUploader = () => {
           id="file-upload"
           className="hidden"
           onChange={handleFileChange}
-          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,.odt,.ods,.odp,.jpg,.jpeg,.png,.gif,.webp,.bmp,.tiff,.tif,.svg,.ico,.heic,.heif"
+          accept=".doc,.docx"
         />
         <div className="pointer-events-none">
           {!selectedFile ? (
             <>
               <Upload className="h-16 w-16 mx-auto mb-4 text-primary" />
-              <h3 className="text-xl font-semibold mb-2">Drop your file here or click to browse</h3>
+              <h3 className="text-xl font-semibold mb-2">Drop your Word file here or click to browse</h3>
               <p className="text-muted-foreground">
-                Support: Word, Excel, PowerPoint, Images (JPG, PNG, BMP, TIFF, SVG), PDF, TXT, and more
+                Support: Word documents (.doc, .docx)
               </p>
             </>
           ) : (
@@ -157,7 +143,7 @@ export const FileUploader = () => {
                 {converted ? (
                   <CheckCircle className="h-12 w-12 text-green-600" />
                 ) : (
-                  getFileIcon(selectedFile.name)
+                  getFileIcon()
                 )}
               </div>
               <p className="font-medium text-lg">{selectedFile.name}</p>
