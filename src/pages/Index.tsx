@@ -20,14 +20,10 @@ const Index = () => {
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              Free Online PDF Converter
+              Word to PDF Converter Online - Free & Fast
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground mb-4">
-              Transform any document to PDF instantly with our free image to PDF converter
-            </p>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              Convert Word, Excel, PowerPoint, images and more to PDF format. 
-              The best online PDF converter tool - 100% free and secure.
+              Convert Word to PDF instantly with our free word to pdf converter tool. Preserve all formatting, images, and layouts perfectly. No registration required.
             </p>
           </div>
           
@@ -37,7 +33,7 @@ const Index = () => {
           
           <div className="mt-8 text-center">
             <p className="text-sm text-muted-foreground">
-              Supported formats: DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, PNG, GIF, WEBP and more
+              Supported formats: DOC, DOCX
             </p>
           </div>
         </div>
